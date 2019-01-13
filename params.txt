@@ -1,0 +1,10 @@
+IndivSize 20
+PopSize 50
+ParentPercent .5
+OffspringPercent .5
+MaxGen 300
+CrossoverProb .8
+MutationProb .05
+TabuSize 5
+MaxSideway 5
+MaxImprove 10
