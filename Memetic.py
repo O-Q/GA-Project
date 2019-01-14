@@ -10,8 +10,10 @@ from hillclimbing import HillClimbing
 def main():
     params = dict()
     # get params from file
-    init_params(params)
-    filename = 'ks_100_997'
+    init_params(params, 'params.txt')
+    # filename = 'ks_20_878'
+    filename = 'ks_100_997'  # params2.txt
+    # filename - 'ks_200_1008' # params3.txt
     # create first PopSize chromosome with gene length IndivSize
     chromosomes = Chromosome.create_random(gene_length=params['IndivSize'], n=params['PopSize'], gene_class=BinaryGene)
     parent_count = int(params['ParentPercent'] * params['PopSize'])
@@ -38,8 +40,8 @@ def main():
     print('Max Value:' + str(mga.eval_fitness(chromosomes[0])))
 
 
-def init_params(params):
-    with open('params2.txt', 'r') as file:
+def init_params(params, params_filename='params.txt'):
+    with open(params_filename, 'r') as file:
         lines = file.readlines()
         for line in lines:
             param = line.split()
@@ -112,7 +114,7 @@ def sort_list_with_another_list(the_list, another_list):
 
 def print_chromosomes(chromosomes):
     for chromosome in chromosomes:
-        print(chromosome.dna)
+        print(int(chromosome.dna, 2))
     print()
 
 
