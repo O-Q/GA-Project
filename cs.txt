@@ -1,0 +1,18 @@
+#Course
+'Math 1' 25
+'Stat 1' 30
+'Geometry'
+#Prof
+'Mr. A' 'Math 1' 'Stat 1'
+'Mrs. B' 'Geometry'
+#Time
+'Geometry' 1.5
+'Stat 1' 1
+#Room
+'Class 11' 25
+'Class 12'
+'Class 24' 40
+#Span
+8 18
+#Separate
+'Math 1' 'Stat 1'

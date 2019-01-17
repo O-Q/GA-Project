@@ -184,118 +184,118 @@ class BaseGeneticAlgorithm(abc.ABC):
                 offspring.append(c1)
         return offspring
 
+    def mutate(self, chromosomes, p_mutate):
 
-def mutate(self, chromosomes, p_mutate):
-    """
-    Call every chromosome's ``mutate`` method.
+        """
+        Call every chromosome's ``mutate`` method.
 
-    p_mutate:  probability of mutation in [0, 1]
-    """
-    assert 0 <= p_mutate <= 1
+        p_mutate:  probability of mutation in [0, 1]
+        """
+        assert 0 <= p_mutate <= 1
 
-    for chromosome in chromosomes:
-        chromosome.mutate(p_mutate)
+        for chromosome in chromosomes:
+            chromosome.mutate(p_mutate)
 
+    def refresh(self, chromosomes, p_mutate=0.5):
 
-def refresh(self, chromosomes, p_mutate=0.5):
-    """
-    Refresh chromosomes with a high mutation rate.
+        """
+        Refresh chromosomes with a high mutation rate.
 
-    chromosomes:  chromosomes to mutate
-    p_mutate (default=0.5):  mutation rate in [0, 1]
-    """
-    self.mutate(chromosomes, p_mutate)
+        chromosomes:  chromosomes to mutate
+        p_mutate (default=0.5):  mutation rate in [0, 1]
+        """
+        self.mutate(chromosomes, p_mutate)
 
+    def run(self, generations, p_mutate, p_crossover, elitist=True, refresh_after=None, quit_after=None):
 
-def run(self, generations, p_mutate, p_crossover, elitist=True, refresh_after=None, quit_after=None):
-    """
-    Run a standard genetic algorithm simulation for a set number
-    of generations (iterations), each consisting of the following
-    ordered steps:
+        """
+        Run a standard genetic algorithm simulation for a set number
+        of generations (iterations), each consisting of the following
+        ordered steps:
 
-      1. competition/survival of the fittest (``compete`` method)
-      2. reproduction (``reproduce`` method)
-      3. mutation (``mutate`` method)
-      4. check if the new population's fittest is fitter than the overall fittest
-      4a.  if not and the ``elitist`` option is active, replace the weakest solution
-           with the overall fittest
+          1. competition/survival of the fittest (``compete`` method)
+          2. reproduction (``reproduce`` method)
+          3. mutation (``mutate`` method)
+          4. check if the new population's fittest is fitter than the overall fittest
+          4a.  if not and the ``elitist`` option is active, replace the weakest solution
+               with the overall fittest
 
-    generations:  how many generations to run
-    p_mutate:  probability of mutation in [0, 1]
-    p_crossover:  probability in [0, 1] that a crossover event will occur for each offspring
-    elitist (default=True):  option to replace the weakest solution with the
-                             strongest if a new one is not found each generation
+        generations:  how many generations to run
+        p_mutate:  probability of mutation in [0, 1]
+        p_crossover:  probability in [0, 1] that a crossover event will occur for each offspring
+        elitist (default=True):  option to replace the weakest solution with the
+                                 strongest if a new one is not found each generation
 
-    return:  the overall fittest solution (chromosome)
-    """
-    start_time = time.time()
+        return:  the overall fittest solution (chromosome)
+        """
+        start_time = time.time()
 
-    assert 0 <= p_mutate <= 1
-    assert 0 <= p_crossover <= 1
+        assert 0 <= p_mutate <= 1
+        assert 0 <= p_crossover <= 1
 
-    # these values guaranteed to be replaced in first generation
-    self.min_fit_ever = 1e999999999
-    self.max_fit_ever = -1e999999999
+        # these values guaranteed to be replaced in first generation
+        self.min_fit_ever = 1e999999999
+        self.max_fit_ever = -1e999999999
 
-    self.generation_fittest.clear()
-    self.generation_fittest_fit.clear()
-    self.overall_fittest_fit.clear()
-    self.new_fittest_generations.clear()
+        self.generation_fittest.clear()
+        self.generation_fittest_fit.clear()
+        self.overall_fittest_fit.clear()
+        self.new_fittest_generations.clear()
 
-    overall_fittest = self.get_fittest()
-    overall_fittest_fit = self.eval_fitness(overall_fittest)
-    gens_since_upset = 0
+        overall_fittest = self.get_fittest()
+        overall_fittest_fit = self.eval_fitness(overall_fittest)
+        gens_since_upset = 0
 
-    for gen in range(1, generations + 1):
-        survivors = self.compete(self.chromosomes)
-        self.chromosomes = self.reproduce(survivors, p_crossover)
-        self.mutate(self.chromosomes, p_mutate)
+        for gen in range(1, generations + 1):
+            survivors = self.compete(self.chromosomes)
+            self.chromosomes = self.reproduce(survivors, p_crossover)
+            self.mutate(self.chromosomes, p_mutate)
 
-        # check for new fittest
-        gen_fittest = self.get_fittest().copy()
-        gen_fittest_fit = self.eval_fitness(gen_fittest)
+            # check for new fittest
+            gen_fittest = self.get_fittest().copy()
+            gen_fittest_fit = self.eval_fitness(gen_fittest)
 
-        if gen_fittest_fit > overall_fittest_fit:
-            overall_fittest = gen_fittest
-            overall_fittest_fit = gen_fittest_fit
-            self.new_fittest_generations.append(gen)
-            gens_since_upset = 0
-        else:
-            gens_since_upset += 1
+            if gen_fittest_fit > overall_fittest_fit:
+                overall_fittest = gen_fittest
+                overall_fittest_fit = gen_fittest_fit
+                self.new_fittest_generations.append(gen)
+                gens_since_upset = 0
+            else:
+                gens_since_upset += 1
 
-            if elitist:
-                # no new fittest found, replace least fit with overall fittest
-                self.sort(self.chromosomes)
-                self.chromosomes[0].dna = overall_fittest.dna
+                if elitist:
+                    # no new fittest found, replace least fit with overall fittest
+                    self.sort(self.chromosomes)
+                    self.chromosomes[0].dna = overall_fittest.dna
 
-        if quit_after and gens_since_upset >= quit_after:
-            print("quitting on generation", gen, "after", quit_after, "generations with no upset")
-            break
+            if quit_after and gens_since_upset >= quit_after:
+                print("quitting on generation", gen, "after", quit_after, "generations with no upset")
+                break
 
-        if refresh_after and gens_since_upset >= refresh_after:
-            # been a very long time since a new best solution -- mix things up
-            print("refreshing on generation", gen)
-            self.mutate(self.chromosomes, 0.5)
-            gens_since_upset = 0
+            if refresh_after and gens_since_upset >= refresh_after:
+                # been a very long time since a new best solution -- mix things up
+                print("refreshing on generation", gen)
+                self.mutate(self.chromosomes, 0.5)
+                gens_since_upset = 0
 
-        self.generation_fittest[gen] = gen_fittest
-        self.generation_fittest_fit[gen] = gen_fittest_fit
-        self.overall_fittest_fit[gen] = overall_fittest_fit
+            self.generation_fittest[gen] = gen_fittest
+            self.generation_fittest_fit[gen] = gen_fittest_fit
+            self.overall_fittest_fit[gen] = overall_fittest_fit
 
-        if self.should_terminate(overall_fittest):
-            break
+            if self.should_terminate(overall_fittest):
+                break
 
-    self.run_time_s = time.time() - start_time
+        self.run_time_s = time.time() - start_time
 
-    return overall_fittest
+        return overall_fittest
 
+    def should_terminate(self, overall_fittest):
 
-def should_terminate(self, overall_fittest):
-    """
-    Return whether the current run should terminate, called at the end of each generation.
+        """
+        Return whether the current run should terminate, called at the end of each generation.
 
-    overall_fittest:  best solution/chromosome encountered thus far in the run
+        overall_fittest:  best solution/chromosome encountered thus far in the run
 
-    return:  bool
-    """
-    return False
+        return:  bool
+        """
+        return False

@@ -2,7 +2,7 @@ from ga.chromosomes import Chromosome
 from myga import KnapSackGeneticAlgorithm
 
 
-class HillClimbing:
+class HillClimbingKnapSack:
     def __init__(self, max_side_way, tabu_size, max_improve, ksga: KnapSackGeneticAlgorithm):
         self.max_sideWay = max_side_way
         self.tabu_size = tabu_size

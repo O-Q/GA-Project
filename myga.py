@@ -1,5 +1,7 @@
 from ga.algorithms import BaseGeneticAlgorithm
 from ga.chromosomes import Chromosome
+from ga.genes import BaseGene, Base10Gene
+from numpy.random import choice, permutation, randint
 
 
 class KnapSackGeneticAlgorithm(BaseGeneticAlgorithm):
@@ -26,3 +28,27 @@ class KnapSackGeneticAlgorithm(BaseGeneticAlgorithm):
             return cum_value
         else:
             return 0
+
+
+class ClassSchedulingGeneticAlgorithm(BaseGeneticAlgorithm):
+    def eval_fitness(self, chromosome):
+        pass
+
+    @staticmethod
+    def create_random_chromosomes(n, courses_list, course_prof, timespan, course_room):
+        chromosomes = list()
+        for i in range(n):
+            genes = list()
+            for course in courses_list:
+                genes.append(NameGene(course))  # course name
+                genes.append(
+                    NameGene(choice(course_prof[course])))  # random prof between profs who can teach this course
+                genes.append(Base10Gene(str(choice(range(1, 6)))))  # day of week
+                genes.append(Base10Gene(str(randint(timespan[0], timespan[1]))))
+                genes.append(NameGene(choice(course_room[course])))  # random room between rooms with enough capacity
+            chromosomes.append(Chromosome(genes))
+        return chromosomes
+
+
+class NameGene(BaseGene):
+    GENETIC_MATERIAL_OPTIONS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz. 1234567890'
