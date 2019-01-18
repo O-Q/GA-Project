@@ -1,6 +1,4 @@
-from numpy.random import choice
-
-from Memetic import init_params, is_same_chromosomes, select_parents
+from Memetic import init_params, is_same_chromosomes, select_parents, evaluated_chromosomes
 from ga.chromosomes import Chromosome
 from ga.genes import BinaryGene
 
@@ -10,9 +8,9 @@ from hillclimbing import HillClimbingKnapSack
 
 def main():
     # get params from file
-    params = init_params('params.txt')
-    filename = 'ks_20_878'
-    # filename = 'ks_100_997'  # params2.txt
+    params = init_params('params2.txt')
+    # filename = 'ks_20_878'
+    filename = 'ks_100_997'  # params2.txt
     # filename - 'ks_200_1008' # params3.txt
     # create first PopSize chromosome with gene length IndivSize
     chromosomes = Chromosome.create_random(gene_length=params['IndivSize'], n=params['PopSize'], gene_class=BinaryGene)
@@ -20,7 +18,7 @@ def main():
     max_gen = params['MaxGen']
     gen_count = 0
     first = True
-    while gen_count < max_gen and first or not is_same_chromosomes(chromosomes):
+    while gen_count < max_gen and (first or not is_same_chromosomes(chromosomes)):
         first = False
         ksga = KnapSackGeneticAlgorithm(chromosomes, filename)
         selection = evaluated_chromosomes(ksga, chromosomes)
@@ -35,27 +33,10 @@ def main():
                                                                         selection_with_offspring)
         chromosomes = sorted_chromosomes_with_offspring[:params['PopSize']]
         gen_count += 1
+        print('Generation: ' + str(gen_count))
     print('END Generation: ' + str(gen_count))
     print('Best Solution Found: ' + chromosomes[0].dna)
     print('Max Value:' + str(ksga.eval_fitness(chromosomes[0])))
-
-
-def evaluated_chromosomes(mga: KnapSackGeneticAlgorithm, chromosomes: list):
-    values = list()
-    cum_values = 0
-    for chromosome in chromosomes:
-        value = mga.eval_fitness(chromosome)
-        cum_values += value
-        values.append(value)
-    selection = list()
-    try:
-        for i in range(len(chromosomes)):
-            selection.append(values[i] / cum_values)
-    except ZeroDivisionError:
-        cum_values = len(values)
-        for i in range(len(chromosomes)):
-            selection.append(1 / cum_values)
-    return selection
 
 
 def mutate_offspring(offspring: list, p_mutate: float):

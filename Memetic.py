@@ -1,5 +1,7 @@
 from numpy.random import choice
 
+from ga.algorithms import BaseGeneticAlgorithm
+
 
 def init_params(params_filename='params.txt') -> dict:
     params = dict()
@@ -22,6 +24,24 @@ def is_same_chromosomes(chromosomes):
             return False
         current = chromosome
     return True
+
+
+def evaluated_chromosomes(bga: BaseGeneticAlgorithm, chromosomes: list):
+    values = list()
+    cum_values = 0
+    for chromosome in chromosomes:
+        value = bga.eval_fitness(chromosome)
+        cum_values += value
+        values.append(value)
+    selection = list()
+    try:
+        for i in range(len(chromosomes)):
+            selection.append(values[i] / cum_values)
+    except ZeroDivisionError:
+        cum_values = len(values)
+        for i in range(len(chromosomes)):
+            selection.append(1 / cum_values)
+    return selection
 
 
 def select_parents(chromosomes, selections, parent_count):

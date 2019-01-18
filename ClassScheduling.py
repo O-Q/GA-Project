@@ -2,9 +2,10 @@
 # each chromosome has 4 value integers
 # C: Class
 # P: Professor
-# t: Time
+# D: Day of week
+# H: Hour
 # R: Room
-from Memetic import init_params, is_same_chromosomes
+from Memetic import init_params, is_same_chromosomes, evaluated_chromosomes, select_parents
 from myga import ClassSchedulingGeneticAlgorithm
 
 
@@ -29,10 +30,14 @@ def __main__():
     max_gen = params['MaxGen']
     gen_count = 0
     first = True
-    while gen_count < max_gen and first or not is_same_chromosomes(chromosomes):
+    while gen_count < max_gen and (first or not is_same_chromosomes(chromosomes)):
         first = False
-        csga = ClassSchedulingGeneticAlgorithm(chromosomes)
+        csga = ClassSchedulingGeneticAlgorithm(chromosomes, seperates)
         selection = evaluated_chromosomes(csga, chromosomes)
+        selected_parents = select_parents(chromosomes, selection, parent_count)
+        gen_count += 1
+        print(gen_count)
+
     for chromosome in chromosomes:
         print(chromosome.dna)
 
@@ -128,8 +133,8 @@ def get_course_room(courses, rooms):
     return course_room
 
 
-def evaluated_chromosomes(csga: ClassSchedulingGeneticAlgorithm, chromosomes: list):
-    return ''
+def sort_list_with_another_list(the_list, another_list):
+    return [x for x, _ in sorted(zip(the_list, another_list), reverse=False, key=lambda item: item[1])]
 
 
 if __name__ == '__main__':
