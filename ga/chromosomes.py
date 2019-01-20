@@ -10,14 +10,14 @@ class Chromosome:
     """
 
     @classmethod
-    def create_random(cls, gene_length, n=1, gene_class=BinaryGene):
+    def create_random(cls, gene_length, n=1, gene_class=BinaryGene, binary_zero_prob=.5):
         """
         Create 1 or more chromosomes with randomly generated DNA.
 
         gene_length:  int (or sequence of ints) describing gene DNA length
         n:  number of chromosomes to create (default=1); returns a list if n>1, else a single chromosome
         gene_class:  subclass of ``ga.chromosomes.BaseGene`` to use for genes
-
+        binary_zero_prob when it's BinaryGene, probability of selecting zero
         return:  new chromosome
         """
         assert issubclass(gene_class, BaseGene)
@@ -28,7 +28,7 @@ class Chromosome:
             gene_length = [gene_length]
 
         for _ in range(n):
-            genes = [gene_class.create_random(length) for length in gene_length]
+            genes = [gene_class.create_random(length, binary_zero_prob=binary_zero_prob) for length in gene_length]
             chromosomes.append(cls(genes))
 
         if n == 1:
@@ -44,6 +44,7 @@ class Chromosome:
         """
         assert all(isinstance(g, BaseGene) for g in genes)
         self.genes = genes
+        self.is_valid = True
 
     @property
     def dna(self):
@@ -92,26 +93,30 @@ class Chromosome:
         chromosome:  other ``Chromosome`` to exchange DNA with
         point:  zero-based index used for the crossover point
         """
-        assert self.length == chromosome.length
-        new_dna = ''
-        other_new_dna = ''
+        assert len(self.genes) == len(chromosome.genes)
+        new_genes = []
+        other_new_genes = []
         last_iter = 0
         for i, point in enumerate(points):
             if i % 2 == 0:
-                new_dna += self.dna[last_iter:point]
-                other_new_dna += chromosome.dna[last_iter:point]
+                new_genes += self.genes[last_iter:point]
+                other_new_genes += chromosome.genes[last_iter:point]
             else:
-                new_dna += chromosome.dna[last_iter:point]
-                other_new_dna += self.dna[last_iter:point]
+                new_genes += chromosome.genes[last_iter:point]
+                other_new_genes += self.genes[last_iter:point]
             last_iter = point
         if len(points) % 2:
-            new_dna += self.dna[last_iter:]
-            other_new_dna += chromosome.dna[last_iter:]
+            new_genes += self.genes[last_iter:]
+            other_new_genes += chromosome.genes[last_iter:]
         else:
-            new_dna += chromosome.dna[last_iter:]
-            other_new_dna += self.dna[last_iter:]
-        self.dna = new_dna
-        chromosome.dna = other_new_dna
+            new_genes += chromosome.genes[last_iter:]
+            other_new_genes += self.genes[last_iter:]
+        self.genes = new_genes
+        chromosome.genes = other_new_genes
+        self.after_crossover(chromosome)
+
+    def after_crossover(self, chromosome):
+        pass
 
     def mutate(self, p_mutate):
         """ 
@@ -120,9 +125,15 @@ class Chromosome:
         p_mutate:  probability for mutation to occur
         """
         assert 0 <= p_mutate <= 1
-
+        g = self.genes.copy()
         for gene in self.genes:
             gene.mutate(p_mutate)
+        self.after_mutate()
+        if not self.is_valid:
+            self.genes = g
+
+    def after_mutate(self):
+        pass
 
     def copy(self):
         """ Return a new instance of this chromosome by copying its genes. """

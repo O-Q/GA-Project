@@ -5,7 +5,7 @@
 # D: Day of week
 # H: Hour
 # R: Room
-from Memetic import init_params, is_same_chromosomes, evaluated_chromosomes, select_parents
+from Memetic import init_params, is_same_chromosomes, evaluated_chromosomes, select_parents, mutate_offspring
 from myga import ClassSchedulingGeneticAlgorithm
 
 
@@ -25,7 +25,7 @@ def __main__():
     print(course_room)
     chromosomes = ClassSchedulingGeneticAlgorithm.create_random_chromosomes(params['PopSize'], courses_list,
                                                                             course_prof, span,
-                                                                            course_room)
+                                                                            course_room, times)
     parent_count = int(params['ParentPercent'] * params['PopSize'])
     max_gen = params['MaxGen']
     gen_count = 0
@@ -33,8 +33,13 @@ def __main__():
     while gen_count < max_gen and (first or not is_same_chromosomes(chromosomes)):
         first = False
         csga = ClassSchedulingGeneticAlgorithm(chromosomes, seperates)
-        selection = evaluated_chromosomes(csga, chromosomes)
+        selection = evaluated_chromosomes(csga, chromosomes, big_better=False)
         selected_parents = select_parents(chromosomes, selection, parent_count)
+        offspring = csga.reproduce(selected_parents, params['CrossoverProb'], n_point_crossover=2)
+        for off in offspring:
+            print(off.dna)
+            print(off.is_valid)
+        offspring_after_mutation = mutate_offspring(offspring, params['MutationProb'])
         gen_count += 1
         print(gen_count)
 
@@ -73,11 +78,8 @@ def init_csp(params_filename='params.txt'):
                     profs[param[0]] = [course for course in param[1:]]
                 elif current_cat == 'Time':
                     param = line.strip().split("' ")
-                    try:
-                        param[0] = param[0].replace("'", '')
-                        times[param[0]] = float(param[1])
-                    except IndexError:
-                        times[param[0]] = 2
+                    param[0] = param[0].replace("'", '')
+                    times[param[0]] = float(param[1])
                 elif current_cat == 'Room':
                     param = line.strip().split("' ")
                     try:
@@ -97,6 +99,9 @@ def init_csp(params_filename='params.txt'):
     if not span:
         span.append(8)
         span.append(16)
+    for course in courses:
+        if not times.get(course):
+            times[course] = 2
     return courses, profs, times, rooms, span, seperates
 
 

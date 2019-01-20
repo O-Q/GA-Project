@@ -1,6 +1,8 @@
 import random
 import string
 
+from numpy.random.mtrand import choice
+
 
 class BaseGene:
     """
@@ -21,10 +23,14 @@ class BaseGene:
         length:  the number of characters in the randomized DNA
         **kwargs:  forwarded to the ``cls`` constructor
         """
-        dna = ''.join([random.choice(cls.GENETIC_MATERIAL_OPTIONS) for _ in range(length)])
+        if kwargs.get('binary_zero_prob'):
+            zero_prob = kwargs['binary_zero_prob']
+            dna = ''.join([str(choice([0, 1], p=[zero_prob, 1 - zero_prob])) for _ in range(length)])
+        else:
+            dna = ''.join([random.choice(cls.GENETIC_MATERIAL_OPTIONS) for _ in range(length)])
         return cls(dna, **kwargs)
 
-    def __init__(self, dna, suppressed=False, name=None):
+    def __init__(self, dna, suppressed=False, name=None, binary_zero_prob=.5):
         """
         Construct a new BaseGene.
         

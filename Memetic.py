@@ -1,3 +1,5 @@
+from functools import reduce
+
 from numpy.random import choice
 
 from ga.algorithms import BaseGeneticAlgorithm
@@ -26,13 +28,23 @@ def is_same_chromosomes(chromosomes):
     return True
 
 
-def evaluated_chromosomes(bga: BaseGeneticAlgorithm, chromosomes: list):
+def evaluated_chromosomes(bga: BaseGeneticAlgorithm, chromosomes: list, big_better=True):
     values = list()
     cum_values = 0
     for chromosome in chromosomes:
         value = bga.eval_fitness(chromosome)
         cum_values += value
         values.append(value)
+
+    if not big_better:
+        inverse_values = list()
+        cum_values = 0
+        multiply_all = reduce(lambda x, y: x * y if (x and y) else 1, values)
+        for value in values:
+            new_value = multiply_all / value
+            inverse_values.append(new_value)
+            cum_values += new_value
+        values = inverse_values
     selection = list()
     try:
         for i in range(len(chromosomes)):
@@ -51,6 +63,18 @@ def select_parents(chromosomes, selections, parent_count):
     """
     parents = choice(chromosomes, parent_count, p=selections)
     return parents
+
+
+def mutate_offspring(offspring: list, p_mutate: float):
+    """
+    mutate after offspring with probability
+    :param offspring: chromosomes that newly generated
+    :param p_mutate: probability for each gene to mutate
+    :return: chromosomes after mutation
+    """
+    for child in offspring:
+        child.mutate(p_mutate)
+    return offspring
 
 
 def print_chromosomes(chromosomes):

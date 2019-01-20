@@ -1,9 +1,12 @@
+import random
+import string
+
 from ga.algorithms import BaseGeneticAlgorithm
 from ga.chromosomes import Chromosome
 from ga.genes import BaseGene, Base10Gene
 from numpy.random import choice, randint
 from collections import defaultdict
-from numpy import std
+from numpy import std, ceil
 
 
 class KnapSackGeneticAlgorithm(BaseGeneticAlgorithm):
@@ -70,20 +73,146 @@ class ClassSchedulingGeneticAlgorithm(BaseGeneticAlgorithm):
         return self.a1 * num_days_sum + self.a2 * num_rooms_sum + self.a3 * std_total_time - self.a4 * dist_sum
 
     @staticmethod
-    def create_random_chromosomes(n, courses_list, course_prof, timespan, course_room):
+    def create_random_chromosomes(n, courses_list, course_prof, timespan, course_room, course_hour):
         chromosomes = list()
         for i in range(n):
             genes = list()
+            rooms = defaultdict(
+                lambda: [[x for x in range(timespan[0], timespan[1])] for _ in range(5)])  # 5 days is work day
+            profs = defaultdict(
+                lambda: [[x for x in range(timespan[0], timespan[1])] for _ in range(5)])  # 5 days is work day
             for course in courses_list:
                 genes.append(NameGene(course))  # course name
-                genes.append(
-                    NameGene(choice(course_prof[course])))  # random prof between profs who can teach this course
-                genes.append(Base10Gene(str(choice(range(1, 6)))))  # day of week
-                genes.append(Base10Gene(str(randint(timespan[0], timespan[1]))))
-                genes.append(NameGene(choice(course_room[course])))  # random room between rooms with enough capacity
-            chromosomes.append(Chromosome(genes))
+                while True:
+                    selected_prof = choice(course_prof[course])  # random prof between profs who can teach this course
+                    selected_room = choice(course_room[course])  # random room between rooms with enough capacity
+                    days = [d + 1 for d in range(5)]
+                    selected_day = choice(days)
+                    hours_needed = int(ceil(course_hour[course]))
+                    room_free_hours = rooms[selected_room][selected_day - 1]
+                    prof_free_hours = profs[selected_prof][selected_day - 1]
+                    intersection_prof_room_free = [value for value in prof_free_hours if value in room_free_hours]
+                    if intersection_prof_room_free:
+                        hour = choice(intersection_prof_room_free)
+                        for h in range(hours_needed):
+                            if rooms[course][selected_day - 1].count(hour + h) and profs[course][
+                                selected_day - 1].count(hour + h):
+                                rooms[course][selected_day - 1].remove(hour + h)
+                                profs[course][selected_day - 1].remove(hour + h)
+                            else:
+                                continue
+                        genes.append(NameGene(selected_prof, course_prof[course], name=course))
+                        genes.append(DayOfWeekGene(str(selected_day), name=course))  # day of week
+                        genes.append(HourGene(str(hour), timespan, name=course))
+                        genes.append(NameGene(selected_room, course_room[course], name=course))
+
+                        break
+            chromosomes.append(CSChromosome(genes, course_hour))
         return chromosomes
 
 
 class NameGene(BaseGene):
-    GENETIC_MATERIAL_OPTIONS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz. 1234567890'
+    GENETIC_MATERIAL_OPTIONS = string.ascii_letters + '. 1234567890'
+
+    def __init__(self, dna, compare_to=None, suppressed=False, name=None):
+        super().__init__(dna, suppressed, name)
+        self.compare_to = compare_to
+
+    def mutate(self, p_mutate):
+        if self.compare_to and random.random() < p_mutate:
+            new_dna = self.dna
+            while new_dna == self.dna:
+                new_dna = choice(self.compare_to)
+            self.dna = new_dna
+
+
+class DayOfWeekGene(BaseGene):
+    GENETIC_MATERIAL_OPTIONS = '1234567'
+
+    def mutate(self, p_mutate):
+        if random.random() < p_mutate:
+            # It can be GENERIC_MATERIAL_OPTIONS but tur and fri are holiday and have not been choose
+            days = [1, 2, 3, 4, 5]
+            days.remove(int(self.dna))
+            self.dna = str(choice(days))
+
+
+class HourGene(BaseGene):
+    GENETIC_MATERIAL_OPTIONS = '1234567890'
+
+    def __init__(self, dna, span, suppressed=False, name=None):
+        super().__init__(dna, suppressed=suppressed, name=name)
+        self.timespan = span
+
+    def copy(self):
+        """ Return a new instance of this gene with the same DNA. """
+        return type(self)(self.dna, self.timespan, suppressed=self.suppressed, name=self.name)
+
+    def mutate(self, p_mutate):
+        assert 0 <= int(self.dna) < 24
+        if random.random() < p_mutate:
+            new_dna = self.dna
+            while new_dna == self.dna:
+                new_dna = str(choice(randint(self.timespan[0], self.timespan[1])))
+            self.dna = new_dna
+
+
+class CSChromosome(Chromosome):
+    # CPDHR: index   i is Course, i + 1 is Prof, i + 2 is Dayofweek, i + 3 is Hour, i + 4 is Room
+
+    def __init__(self, genes, course_duration):
+        super().__init__(genes)
+        self.course_duration = course_duration
+        self.update_tables()
+
+    def copy(self):
+        """ Return a new instance of this chromosome by copying its genes. """
+        genes = [g.copy() for g in self.genes]
+        return type(self)(genes, self.course_duration)
+
+    def crossover(self, chromosome, points):
+        assert len(self.genes) == len(chromosome.genes)
+        new_genes = []
+        other_new_genes = []
+        points = [i for i in range(len(self.genes))]
+        first = True
+        while first or (not self.is_valid or not chromosome.is_valid):
+            new_genes = []
+            other_new_genes = []
+            if points:
+                point = choice(points)
+                points.remove(point)
+            else:
+                return
+            new_genes += chromosome.genes[0:point]
+            other_new_genes += self.genes[0:point]
+            new_genes += chromosome.genes[point:]
+            other_new_genes += self.genes[point:]
+            self.after_crossover(chromosome)
+
+        self.genes = new_genes
+        chromosome.genes = other_new_genes
+
+    def after_crossover(self, another_chromosome):
+        self.update_tables()
+        another_chromosome.update_tables()
+
+    def after_mutate(self):
+        self.update_tables()
+
+    def update_tables(self):
+        rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days is work day
+        profs = defaultdict(lambda: [[] for _ in range(5)])
+        for i in range(0, len(self.genes), 5):
+            for hour_count in range(int(ceil(self.course_duration[self.genes[i].dna]))):
+                if str(int(self.genes[i + 3].dna) + hour_count) in rooms[self.genes[i + 4].dna][
+                    int(self.genes[i + 2].dna) - 1]:
+                    self.is_valid = False
+                if str(int(self.genes[i + 3].dna) + hour_count) in profs[self.genes[i + 1].dna][
+                    int(self.genes[i + 2].dna) - 1]:
+                    self.is_valid = False
+                rooms[self.genes[i + 4].dna][int(self.genes[i + 2].dna) - 1].append(
+                    str(int(self.genes[i + 3].dna) + hour_count))
+                profs[self.genes[i + 1].dna][int(self.genes[i + 2].dna) - 1].append(
+                    str(int(self.genes[i + 3].dna) + hour_count))
+        return self.is_valid

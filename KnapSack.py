@@ -1,19 +1,22 @@
-from Memetic import init_params, is_same_chromosomes, select_parents, evaluated_chromosomes
+from Memetic import init_params, is_same_chromosomes, select_parents, evaluated_chromosomes, mutate_offspring
 from ga.chromosomes import Chromosome
 from ga.genes import BinaryGene
 
 from myga import KnapSackGeneticAlgorithm
 from hillclimbing import HillClimbingKnapSack
+import numpy as np
 
 
 def main():
     # get params from file
-    params = init_params('params2.txt')
-    # filename = 'ks_20_878'
-    filename = 'ks_100_997'  # params2.txt
-    # filename - 'ks_200_1008' # params3.txt
+    params = init_params('params.txt')
+    filename = 'ks_20_878'
+    # filename = 'ks_100_997'  # params2.txt
+    # filename = 'ks_200_1008' # params3.txt
     # create first PopSize chromosome with gene length IndivSize
-    chromosomes = Chromosome.create_random(gene_length=params['IndivSize'], n=params['PopSize'], gene_class=BinaryGene)
+    chromosomes = Chromosome.create_random(gene_length=np.ones(params['IndivSize'], dtype='int32'), n=params['PopSize'],
+                                           gene_class=BinaryGene, binary_zero_prob=.9)
+
     parent_count = int(params['ParentPercent'] * params['PopSize'])
     max_gen = params['MaxGen']
     gen_count = 0
@@ -34,21 +37,11 @@ def main():
         chromosomes = sorted_chromosomes_with_offspring[:params['PopSize']]
         gen_count += 1
         print('Generation: ' + str(gen_count))
+        print('Best in this generation: ' + chromosomes[0].dna)
+        print('Best score: ' + str(ksga.eval_fitness(chromosomes[0])))
     print('END Generation: ' + str(gen_count))
     print('Best Solution Found: ' + chromosomes[0].dna)
     print('Max Value:' + str(ksga.eval_fitness(chromosomes[0])))
-
-
-def mutate_offspring(offspring: list, p_mutate: float):
-    """
-    mutate after offspring with probability
-    :param offspring: chromosomes that newly generated
-    :param p_mutate: probability for each gene to mutate
-    :return: chromosomes after mutation
-    """
-    for child in offspring:
-        child.mutate(p_mutate)
-    return offspring
 
 
 def hill_climbing_improve(offspring_after_mutation, ksga, max_improve, max_side_way, tabu_size):
