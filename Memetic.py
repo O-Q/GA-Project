@@ -40,15 +40,19 @@ def evaluated_chromosomes(bga: BaseGeneticAlgorithm, chromosomes: list, big_bett
         inverse_values = list()
         cum_values = 0
         multiply_all = reduce(lambda x, y: x * y if (x and y) else 1, values)
-        for value in values:
+        for i, value in enumerate(values):
             new_value = multiply_all / value
             inverse_values.append(new_value)
-            cum_values += new_value
+            if chromosomes[i].is_valid:
+                cum_values += new_value
         values = inverse_values
     selection = list()
     try:
         for i in range(len(chromosomes)):
-            selection.append(values[i] / cum_values)
+            if chromosomes[i].is_valid:
+                selection.append(values[i] / cum_values)
+            else:
+                selection.append(0)
     except ZeroDivisionError:
         cum_values = len(values)
         for i in range(len(chromosomes)):

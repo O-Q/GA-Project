@@ -101,10 +101,10 @@ class ClassSchedulingGeneticAlgorithm(BaseGeneticAlgorithm):
                                 profs[course][selected_day - 1].remove(hour + h)
                             else:
                                 continue
-                        genes.append(NameGene(selected_prof, course_prof[course], name=course))
-                        genes.append(DayOfWeekGene(str(selected_day), name=course))  # day of week
-                        genes.append(HourGene(str(hour), timespan, name=course))
-                        genes.append(NameGene(selected_room, course_room[course], name=course))
+                        genes.append(NameGene(selected_prof, compare_to=course_prof[course], name='prof'))
+                        genes.append(DayOfWeekGene(str(selected_day), name='day'))  # day of week
+                        genes.append(HourGene(str(hour), timespan, name='hour'))
+                        genes.append(NameGene(selected_room, course_room[course], name='room'))
 
                         break
             chromosomes.append(CSChromosome(genes, course_hour))
@@ -118,8 +118,11 @@ class NameGene(BaseGene):
         super().__init__(dna, suppressed, name)
         self.compare_to = compare_to
 
+    def copy(self):
+        return type(self)(self.dna, compare_to=self.compare_to, suppressed=self.suppressed, name=self.name)
+
     def mutate(self, p_mutate):
-        if self.compare_to and random.random() < p_mutate:
+        if self.compare_to and len(self.compare_to) > 1 and random.random() < p_mutate:
             new_dna = self.dna
             while new_dna == self.dna:
                 new_dna = choice(self.compare_to)
@@ -162,6 +165,8 @@ class CSChromosome(Chromosome):
 
     def __init__(self, genes, course_duration):
         super().__init__(genes)
+        rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days is work day
+        profs = defaultdict(lambda: [[] for _ in range(5)])
         self.course_duration = course_duration
         self.update_tables()
 
@@ -201,18 +206,18 @@ class CSChromosome(Chromosome):
         self.update_tables()
 
     def update_tables(self):
-        rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days is work day
-        profs = defaultdict(lambda: [[] for _ in range(5)])
+        self.rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days is work day
+        self.profs = defaultdict(lambda: [[] for _ in range(5)])
         for i in range(0, len(self.genes), 5):
             for hour_count in range(int(ceil(self.course_duration[self.genes[i].dna]))):
-                if str(int(self.genes[i + 3].dna) + hour_count) in rooms[self.genes[i + 4].dna][
+                if str(int(self.genes[i + 3].dna) + hour_count) in self.rooms[self.genes[i + 4].dna][
                     int(self.genes[i + 2].dna) - 1]:
                     self.is_valid = False
-                if str(int(self.genes[i + 3].dna) + hour_count) in profs[self.genes[i + 1].dna][
+                if str(int(self.genes[i + 3].dna) + hour_count) in self.profs[self.genes[i + 1].dna][
                     int(self.genes[i + 2].dna) - 1]:
                     self.is_valid = False
-                rooms[self.genes[i + 4].dna][int(self.genes[i + 2].dna) - 1].append(
+                self.rooms[self.genes[i + 4].dna][int(self.genes[i + 2].dna) - 1].append(
                     str(int(self.genes[i + 3].dna) + hour_count))
-                profs[self.genes[i + 1].dna][int(self.genes[i + 2].dna) - 1].append(
+                self.profs[self.genes[i + 1].dna][int(self.genes[i + 2].dna) - 1].append(
                     str(int(self.genes[i + 3].dna) + hour_count))
         return self.is_valid
