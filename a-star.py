@@ -11,8 +11,8 @@ class Node:
 
 def main():
     counter = 0
-    max_weight, items = read_file('ks_100_997')
-    optimal = 2397
+    max_weight, items = read_file('ks_200_1008')
+    optimal = 1634
     items_length = len(items)
     priority_list = list()
     priority_list.append(Node(0, 0, 0, []))
@@ -22,7 +22,7 @@ def main():
         best_index = -1
         best_value = -1
         for i, node in enumerate(priority_list):
-            if node.current_value + heuristic(node.current_value, optimal, max_weight) > best_value:
+            if node.current_value + heuristic(node.current_value, optimal, max_weight) >= best_value:
                 best_value = node.current_value
                 best_index = i
         best_node = priority_list[best_index]

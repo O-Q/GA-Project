@@ -9,8 +9,8 @@ import numpy as np
 
 def main():
     # get params from file
-    params = init_params('params.txt')
-    filename = 'ks_20_878'
+    params = init_params('params3.txt')
+    filename = 'ks_200_1008'
     # filename = 'ks_100_997'  # params2.txt
     # filename = 'ks_200_1008' # params3.txt
     # create first PopSize chromosome with gene length IndivSize
@@ -39,6 +39,10 @@ def main():
         print('Generation: ' + str(gen_count))
         print('Best in this generation: ' + chromosomes[0].dna)
         print('Best score: ' + str(ksga.eval_fitness(chromosomes[0])))
+        cum_score = 0
+        for i in range(params['PopSize']):
+            cum_score += ksga.eval_fitness(chromosomes[i])
+        print('Average Score: ' + str(cum_score / params['PopSize']))
     print('END Generation: ' + str(gen_count))
     print('Best Solution Found: ' + chromosomes[0].dna)
     print('Max Value:' + str(ksga.eval_fitness(chromosomes[0])))
