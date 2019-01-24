@@ -2,9 +2,12 @@
 'Math 1' 25
 'Stat 1' 30
 'Geometry'
+'Calc' 20
+'Programming'
 #Prof
-'Mr. A' 'Math 1' 'Stat 1'
+'Mr. A' 'Math 1' 'Stat 1' 'Calc'
 'Mrs. B' 'Geometry'
+'Mr. C' 'Programming'
 #Time
 'Geometry' 1.5
 'Stat 1' 1
@@ -16,3 +19,4 @@
 8 18
 #Separate
 'Math 1' 'Stat 1'
+'Math 1' 'Programming'

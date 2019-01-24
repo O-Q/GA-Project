@@ -32,7 +32,10 @@ def evaluated_chromosomes(bga: BaseGeneticAlgorithm, chromosomes: list, big_bett
     values = list()
     cum_values = 0
     for chromosome in chromosomes:
-        value = bga.eval_fitness(chromosome)
+        if chromosome.is_valid:
+            value = bga.eval_fitness(chromosome)
+        else:
+            value = 1
         cum_values += value
         values.append(value)
 

@@ -7,7 +7,9 @@
 # R: Room
 from Memetic import init_params, is_same_chromosomes, evaluated_chromosomes, select_parents, mutate_offspring
 from hillclimbing import HillClimbingClassScheduling
-from myga import ClassSchedulingGeneticAlgorithm
+from myga import ClassSchedulingGeneticAlgorithm, CSChromosome
+
+WEEK = {1: 'Sat', 2: 'Sun', 3: 'Mon', 4: 'Tue', 5: 'Wed', 6: 'Tur', 7: 'Fri'}
 
 
 def __main__():
@@ -41,7 +43,7 @@ def __main__():
         hill_climbed_offspring = hill_climbing_improve(offspring_after_mutation, csga, params['MaxImprove'],
                                                        params['MaxSideway'], params['TabuSize'])
         chromosomes_with_offspring = chromosomes + hill_climbed_offspring
-        selection_with_offspring = evaluated_chromosomes(csga, chromosomes_with_offspring)
+        selection_with_offspring = evaluated_chromosomes(csga, chromosomes_with_offspring, big_better=False)
         sorted_chromosomes_with_offspring = sort_list_with_another_list(chromosomes_with_offspring,
                                                                         selection_with_offspring)
         chromosomes = sorted_chromosomes_with_offspring[:params['PopSize']]
@@ -50,8 +52,9 @@ def __main__():
         print('Best in this generation: ' + chromosomes[0].dna)
         print('Best score: ' + str(csga.eval_fitness(chromosomes[0])))
     print('END Generation: ' + str(gen_count))
-    print('Best Solution Found: ' + chromosomes[0].dna)
-    print('Max Value:' + str(csga.eval_fitness(chromosomes[0])))
+    print('Best Solution Found: ')
+    print_solution(chromosomes[0])
+    print('Min Value:' + str(csga.eval_fitness(chromosomes[0])))
 
 
 def init_csp(params_filename='params.txt'):
@@ -154,6 +157,15 @@ def get_course_room(courses, rooms):
 
 def sort_list_with_another_list(the_list, another_list):
     return [x for x, _ in sorted(zip(the_list, another_list), reverse=True, key=lambda item: item[1])]
+
+
+def print_solution(chromosome: CSChromosome):
+    for i in range(0, len(chromosome.genes), 5):
+        print('Course: ' + chromosome.genes[i].dna)
+        print('Professor: ' + chromosome.genes[i + 1].dna)
+        print('Class: ' + chromosome.genes[i + 4].dna)
+        print(WEEK[int(chromosome.genes[i + 2].dna)] + ' ' + chromosome.genes[i + 3].dna)
+        print('----------')
 
 
 if __name__ == '__main__':

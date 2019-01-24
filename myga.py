@@ -73,6 +73,17 @@ class ClassSchedulingGeneticAlgorithm(BaseGeneticAlgorithm):
         return self.a1 * num_days_sum + self.a2 * num_rooms_sum + self.a3 * std_total_time - self.a4 * dist_sum
 
     @staticmethod
+    def fill_hours(course, hours_needed, selected_day, rooms, profs, hour):
+        for h in range(hours_needed):
+            if not rooms[course][selected_day - 1].count(hour + h) or not profs[course][
+                selected_day - 1].count(hour + h):
+                return False
+        for h in range(hours_needed):
+            rooms[course][selected_day - 1].remove(hour + h)
+            profs[course][selected_day - 1].remove(hour + h)
+        return True
+
+    @staticmethod
     def create_random_chromosomes(n, courses_list, course_prof, timespan, course_room, course_hour):
         chromosomes = list()
         for i in range(n):
@@ -94,20 +105,15 @@ class ClassSchedulingGeneticAlgorithm(BaseGeneticAlgorithm):
                     intersection_prof_room_free = [value for value in prof_free_hours if value in room_free_hours]
                     if intersection_prof_room_free:
                         hour = choice(intersection_prof_room_free)
-                        for h in range(hours_needed):
-                            if rooms[course][selected_day - 1].count(hour + h) and profs[course][
-                                selected_day - 1].count(hour + h):
-                                rooms[course][selected_day - 1].remove(hour + h)
-                                profs[course][selected_day - 1].remove(hour + h)
-                            else:
-                                continue
+                        if not ClassSchedulingGeneticAlgorithm.fill_hours(course, hours_needed, selected_day, rooms,
+                                                                          profs, hour):
+                            continue
                         genes.append(NameGene(selected_prof, compare_to=course_prof[course], name='prof'))
                         genes.append(DayOfWeekGene(str(selected_day), name='day'))  # day of week
                         genes.append(HourGene(str(hour), timespan, name='hour'))
                         genes.append(NameGene(selected_room, course_room[course], name='room'))
-
                         break
-            chromosomes.append(CSChromosome(genes, course_hour))
+            chromosomes.append(CSChromosome(genes, course_hour, timespan))
         return chromosomes
 
 
@@ -163,17 +169,18 @@ class HourGene(BaseGene):
 class CSChromosome(Chromosome):
     # CPDHR: index   i is Course, i + 1 is Prof, i + 2 is Dayofweek, i + 3 is Hour, i + 4 is Room
 
-    def __init__(self, genes, course_duration):
+    def __init__(self, genes, course_duration, timespan):
         super().__init__(genes)
-        rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days is work day
+        rooms = defaultdict(lambda: [[] for _ in range(5)])  # 5 days are work day
         profs = defaultdict(lambda: [[] for _ in range(5)])
         self.course_duration = course_duration
+        self.timespan = timespan
         self.update_tables()
 
     def copy(self):
         """ Return a new instance of this chromosome by copying its genes. """
         genes = [g.copy() for g in self.genes]
-        return type(self)(genes, self.course_duration)
+        return type(self)(genes, self.course_duration, self.timespan)
 
     def crossover(self, chromosome, points):
         assert len(self.genes) == len(chromosome.genes)
@@ -210,12 +217,17 @@ class CSChromosome(Chromosome):
         self.profs = defaultdict(lambda: [[] for _ in range(5)])
         for i in range(0, len(self.genes), 5):
             for hour_count in range(int(ceil(self.course_duration[self.genes[i].dna]))):
+                if not self.timespan[0] <= int(self.genes[i + 3].dna) + hour_count < self.timespan[1]:
+                    self.is_valid = False
+                    return
                 if str(int(self.genes[i + 3].dna) + hour_count) in self.rooms[self.genes[i + 4].dna][
                     int(self.genes[i + 2].dna) - 1]:
                     self.is_valid = False
+                    return
                 if str(int(self.genes[i + 3].dna) + hour_count) in self.profs[self.genes[i + 1].dna][
                     int(self.genes[i + 2].dna) - 1]:
                     self.is_valid = False
+                    return
                 self.rooms[self.genes[i + 4].dna][int(self.genes[i + 2].dna) - 1].append(
                     str(int(self.genes[i + 3].dna) + hour_count))
                 self.profs[self.genes[i + 1].dna][int(self.genes[i + 2].dna) - 1].append(
