@@ -24,7 +24,6 @@ def is_same_chromosomes(chromosomes):
     for chromosome in chromosomes:
         if current.dna != chromosome.dna:
             return False
-        current = chromosome
     return True
 
 
